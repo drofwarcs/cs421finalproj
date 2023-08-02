@@ -1,0 +1,154 @@
+{
+    //extends(".*exp")=exp
+    tokens = [
+        /* Keywords */
+        AND = "and"
+        BREAK = "break"
+        DO = "do"
+        ELSE = "else"
+        ELSEIF = "elseif"
+        END = "end"
+        FALSE = "false"
+        FOR = "for"
+        IF = "if"
+        IN = "in"
+        LOCAL = "local"
+        NIL = "nil"
+        NOT = "not"
+        OR = "or"
+        REPEAT = "repeat"
+        RETURN = "return"
+        THEN = "then"
+        TRUE = "true"
+        UNTIL = "until"
+        WHILE = "while"
+        REGION = "REGION"
+        ENDREGION = "ENDREGION"
+        FUNCTIONDECL = "function"
+
+        SHEBANG = "#!"
+        SHEBANG_CONTENT = "SHEBANG_CONTENT"
+        ELLIPSIS = "..."
+        CONCAT = ".."
+        EQ = "=="
+        GE = ">="
+        LE = "<="
+        NE = "~="
+        MINUS = "-"
+        PLUS = "+"
+        MULT = "*"
+        MOD = "%"
+        DIV = "/"
+        ASSIGN = "="
+        GT = ">"
+        LT = "<"
+        LPAREN = "("
+        RPAREN = ")"
+        LBRACK = "["
+        RBRACK = "]"
+        LCURLY = "{"
+        RCURLY = "}"
+        GETN = "#"
+        COMMA = ","
+        SEMI = ";"
+        COLON = ":"
+        DOT = "."
+        EXPPO = "^"
+
+        SHORT_COMMENT="SHORT_COMMENT"
+        DOC_COMMENT="DOC_COMMENT"
+        BLOCK_COMMENT="BLOCK_COMMENT"
+        IDENTIFIER="regexp:[A-Za-z_][A-Za-z0-9_]*"
+        NUMBER="regexp:\d+(\.\d*)?"
+        STRING = "regexp:('([^'\\]|\\.)*'|\"([^\"\\]|\\.)*\")"
+  ]
+
+    parserClass="com.cs.languageplugin.parser.LuaParser"
+
+    extends="com.intellij.extapi.psi.ASTWrapperPsiElement"
+
+    psiClassPrefix="Lua"
+    psiImplClassSuffix="Impl"
+    psiPackage="com.cs.languageplugin.psi"
+    psiImplPackage="com.cs.languageplugin.psi.impl"
+
+    elementTypeHolderClass="com.cs.languageplugin.psi.LuaTypes"
+    elementTypeClass="com.cs.languageplugin.psi.LuaElementType"
+    tokenTypeClass="com.cs.languageplugin.psi.LuaTokenType"
+    psiImplUtilClass="com.cs.languageplugin.psi.impl.LuaPsiImplUtil"
+}
+
+
+private block ::= chunk
+chunk ::= (stat ';'?)* (laststat ';'?)?
+
+stat ::= varlist '=' explist
+    | functioncall
+    | 'do' block 'end'
+    | 'while' exp 'do' block 'end'
+    | 'repeat' block 'until' exp
+    | 'if' exp 'then' block ('elseif' exp 'then' block)* 'else'? block? 'end'
+    | 'for' IDENTIFIER '=' exp ',' exp ','? exp 'do' block 'end'
+    | 'for' namelist 'in' explist 'do' block 'end'
+    | 'function' funcname funcbody
+    | 'local' 'function' IDENTIFIER funcbody
+    | 'local' namelist ('=' explist)?
+
+
+laststat ::= 'return' explist?
+    | 'break'
+
+funcname ::= IDENTIFIER ('.' IDENTIFIER)* (':' IDENTIFIER)?
+
+varlist ::= var (',' var)*
+
+var ::=  ( IDENTIFIER | '(' exp ')' varSuffix) varSuffix*
+
+namelist ::= IDENTIFIER (',' IDENTIFIER)*
+
+explist ::= (exp ',')* exp
+
+exp ::=  ('nil' | 'false' | 'true' | Number | String | '...' | function |
+     prefixexp | tableconstructor |  unop exp) (binop exp)*
+
+prefixexp ::= varorexp nameandargs*
+
+functioncall ::=  varorexp nameandargs+
+
+varorexp ::= var | '(' exp ')'
+
+nameandargs ::= (':' IDENTIFIER)? args
+
+varSuffix ::= nameandargs* ('[' exp ']' | '.' IDENTIFIER)
+
+args ::=  '(' explist? ')'
+    | tableconstructor
+    | String
+
+function ::= 'function' funcbody { methods=[getFunction]}
+
+funcbody ::= '(' parlist? ')' block 'end'
+
+parlist ::= namelist (',' '...')?
+    | '...'
+
+tableconstructor ::= '{' fieldlist? '}'
+
+fieldlist ::= field (fieldsep field)* fieldsep?
+
+field ::= '[' exp ']' '=' exp
+    | IDENTIFIER '=' exp
+    | exp
+
+fieldsep ::= ','
+    | ';'
+
+binop ::= '+' | '-' | '*' | '/' | '^' | '%' | '..' |
+          '<' | '<=' | '>' | '>=' | '==' | '~=' |
+          'and' | 'or'
+
+unop ::= '-'
+    | 'not'
+    | '#'
+
+space ::= ' '*
